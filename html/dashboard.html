@@ -42,29 +42,29 @@
 		<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#{{.FuncName}}Modal" data-backdrop="static" data-keyboard="false">Run</button>
 		<!-- Modal -->
 		<div id="{{.FuncName}}Modal" class="modal fade" role="dialog">
-  		  <div class="modal-dialog">
+		  <div class="modal-dialog">
 
-    		<!-- Modal content-->
-    		<div class="modal-content">
-      		  <div class="modal-header">
+			<!-- Modal content-->
+			<div class="modal-content">
+			  <div class="modal-header">
 				<button type="button" class="close" data-dismiss="modal">&times;</button>
 				<h4 class="modal-title">Input Parameters</h4>
-      		  </div>
+			  </div>
 			  <form action="/functions/{{.FuncName}}/call" method="post" onsubmit="submitParams('{{.FuncName}}')">
-      		  <div class="modal-body">
+			  <div class="modal-body">
 				<p>Input your parameters in JSON format. If no parameter, put {}.</p>
 				<textarea class="form-control" rows="5" id="params" name="params">{
   "a":3,
   "b":6
 }</textarea>
-      		  </div>
-      		  <div class="modal-footer">
+			  </div>
+			  <div class="modal-footer">
 				<button type="button" id="{{.FuncName}}CanBtn" class="btn btn-default" data-dismiss="modal">Cancel</button>
 				<button type="submit" id="{{.FuncName}}RunBtn" class="btn btn-default" >Run</button>
-      		  </div>
+			  </div>
 			  </form>
-    		</div>
-  		  </div>
+			</div>
+		  </div>
 		</div>
 		<a class="btn btn-primary dropdown-toggle" href="#" data-toggle="dropdown">
 		<span class="caret"></span></a>
