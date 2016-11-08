@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: helloworld
+spec:
+  template:
+    metadata:
+      name: helloworld
+    spec:
+      containers:
+      - name: helloworld
+        image: registry.paas.symcpe.com:443/xuant/faas:v1
+      restartPolicy: Never

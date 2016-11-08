@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>SymCPE Function-as-a-Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container-fluid">
+    <div class="navbar-header">   
+      <a class="navbar-brand" href="#">Go-kexec</a>
+    </div>
+    <ul class="nav navbar-nav navbar-right">
+      <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span> Log out</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+<h3>Configure function</h3>
+<hr>
+<div class="alert alert-danger" id="error" style="display:none;">
+  <strong>Error! </strong><p id="errMsg"></p>
+</div>
+<form class="form-horizontal" id="codeForm" action="/create" method="post" enctype="multipart/form-data">
+  <div class="form-group">
+	<label class="control-label col-sm-2" for="functionName">Name:</label>
+	<div class="col-sm-4">
+  	  <input type="text" class="form-control" id="functionName" name="functionName" {{if .FuncName}}value="{{.FuncName}}" readonly{{else}}placeholder="myHandler" required{{end}}>
+	</div>
+  </div>
+  <div class="form-group">
+	<label class="control-label col-sm-2" for="runtime">Runtime:</label>
+	<div class="col-sm-4">
+  	  <select id="runtime" class="form-control" name="runtime">
+    	<option value="python27">Python2.7</option>
+  	  </select>
+	</div>
+  </div>
+  <h4>Function code</h4>
+  <hr>
+  <div class="form-group">
+  <div class="col-sm-8" id="editor_div" required>{{if .FuncContent}}{{.FuncContent}}{{else}}def myHandler(params):
+    a = params["a"]
+    b = params["b"]
+    print "The sum is " + str(a+b) + "."{{end}}</div>
+  </div>
+  <div class="form-group"> 
+    <div class="col-sm-5 pull-right">
+  	  <button type="button" class="btn btn-default" id="cancelbtn" onclick="history.go(-1);">Cancle</button>
+  	  <button type="submit" class="btn btn-default" id="savebtn">Save</button>
+	</div>
+  </div>
+  <hr>
+  <div class="form-group"> 
+	<div id="ta" style="display:none;">
+    <label class="control-label" for="myTextarea">Code uploaded:</label>
+    <textarea class="form-control" id="myTextarea" name="codeTextarea">Default value</textarea>
+	</div>
+  </div>
+</form>
+</div>
+<script src="js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var editor = ace.edit("editor_div");
+    editor.setTheme("ace/theme/monokai");
+    editor.getSession().setMode("ace/mode/python");
+
+	$('#codeForm').submit(function(e){
+		// Prevent the default form submission
+		e.preventDefault();
+
+		// Validate function name
+		var reg = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+		if(!reg.test($('#functionName').val())){
+			document.getElementById('error').style.display = "block";
+			$('#errMsg').text("Invalid function name. Must match the regex [a-z0-9]([-a-z0-9]*[a-z0-9])? (e.g. 'my-name' or '123-abc')]");
+			$('html').scrollTop(0);
+
+			return;
+		}
+
+		// Disable buttons and change text
+		var btn = document.getElementById("savebtn");
+		btn.disabled = true;
+		btn.style.cursor = "default";
+		btn.innerHTML = "Saving...";
+		document.getElementById("cancelbtn").disabled = true;
+
+		// Show text area
+		var textarea = document.getElementById("myTextarea");
+    	textarea.value = editor.getSession().getValue();
+		document.getElementById("ta").style.display = "block";
+
+		// Handle callback
+		$.ajax({
+		  url: $('#codeForm').attr('action'),
+		  type: 'POST',
+		  data : $('#codeForm').serialize(),
+		  error: function(data){
+			document.getElementById('error').style.display = "block";
+			$('#errMsg').text(data.responseText);
+			document.getElementById("savebtn").disabled = false;
+			document.getElementById("savebtn").innerHTML = "Save";
+			document.getElementById("cancelbtn").disabled = false;
+			$('html').scrollTop(0);
+		  },
+		  success: function(){
+			window.location.href="/html/func_created.html";
+			document.getElementById("savebtn").disabled = false;
+			document.getElementById("savebtn").innerHTML = "Save";
+			document.getElementById("cancelbtn").disabled = false;
+		  }
+		});
+	});
+</script>
+</body>
+</html>

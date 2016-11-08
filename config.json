@@ -1,0 +1,11 @@
+{
+	"FileServerDir": "/home/vagrant/goproject/src/github.com/Symantec/Go-kexec/static",
+	"DockerRegistry": "registry.paas.symcpe.com:443",
+	"LDAPcfg":
+	{
+		"LDAPServer": ["ds.symcpe.net"],
+		"LDAPPort": 636,
+		"LDAPRetries": 3,
+		"LDAPBaseDn": "uid=%s,ou=People,dc=mgmt,dc=symcpe,dc=net"
+	}
+}

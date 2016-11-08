@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>SymCPE Function-as-a-Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link href="css/dashboard.css" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container-fluid">
+	<div class="navbar-header">   
+      <a class="navbar-brand" href="#">Go-kexec</a>
+	</div>
+	<ul class="nav navbar-nav navbar-right">
+      <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span> Log out</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+      <h2>Welcome {{.Username}}! Thanks for using Go-Kexec</h2>
+	  <a class="btn btn-lg btn-primary func-button" href="/create">Create a function</a>
+		<table class="table table-striped">
+		  <tr>
+			<th>Function Name</th>
+			<th>Owner</th>
+			<th>Run Time</th>
+			<th>Last Modified</th>
+			<th>Actions</th>
+		  </tr>
+		  {{range .Functions}}
+		  <tr>
+			<td>{{.FuncName}}</td>
+			<td>{{.Owner}}</td>
+			<td>Python 2.7</td>
+			<td>{{.UpdatedTime}}</td>
+			<td>
+	  <div class="btn-group">
+		<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#{{.FuncName}}Modal">Run</button>
+		<!-- Modal -->
+		<div id="{{.FuncName}}Modal" class="modal fade" role="dialog">
+  		  <div class="modal-dialog">
+
+    		<!-- Modal content-->
+    		<div class="modal-content">
+      		  <div class="modal-header">
+        		<button type="button" class="close" data-dismiss="modal">&times;</button>
+        		<h4 class="modal-title">Input Parameters</h4>
+      		  </div>
+			  <form id="paramForm" action="/functions/{{.FuncName}}/call" method="post">
+      		  <div class="modal-body">
+				<p>Input your parameters in JSON format</p>
+				<textarea class="form-control" rows="5" id="params" name="params">{
+  "a":3,
+  "b":6
+}</textarea>
+      		  </div>
+      		  <div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+				<button type="submit" class="btn btn-default" >Run</button>
+      		  </div>
+			  </form>
+    		</div>
+  		  </div>
+		</div>
+		<a class="btn btn-primary dropdown-toggle" href="#" data-toggle="dropdown">
+		<span class="caret"></span></a>
+		<ul class="dropdown-menu">
+		<li><a href="/{{.FuncName}}" class="btn btn-default btn-block dropdownbtn">Edit</a></li>
+		<li>
+		  <form action="/functions/{{.FuncName}}" method="post">
+				<button type="submit" class="btn btn-default btn-block dropdownbtn">Delete</button>
+		  </form>
+		</li>
+		</ul>
+	  </div>
+			</td>
+		  </tr>
+		{{end}}
+		</table>
+</div>
+</body>
+</html>
