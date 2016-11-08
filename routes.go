@@ -95,7 +95,7 @@ var routes = Routes{
 	Route{
 		"Edit",
 		"GET",
-		"/{function}",
+		"/functions/{function}",
 		EditFuncPageHandler,
 	},
 	Route{
