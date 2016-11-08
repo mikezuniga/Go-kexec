@@ -21,5 +21,4 @@ Then, go to your bin, run
 4. API Gateway bridge
 5. Reverse proxy configuration
 6. Integration test
-7. Add web frontend using advanced web framework (eg AngularJS)
 8. Tune DAL (mysql)

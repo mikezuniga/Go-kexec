@@ -115,13 +115,13 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 		return "", "", err
 	}
 	// Run the job
-	status, err := a.k.RunJob(jobName, nsName)
+	err = a.k.RunJob(jobName, nsName)
 	if err != nil {
 		return "", "", err
 	}
 
 	// Get the log
-	funcLog, err := a.k.GetFunctionLog(jobName, nsName)
+	status, funcLog, err := a.k.GetFunctionLog(jobName, nsName)
 	if err != nil {
 		return "", "", err
 	}

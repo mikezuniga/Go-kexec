@@ -37,10 +37,6 @@ type Kexec struct {
 
 // NewKexec creates a new Kexec instance which contains all the methods
 // to communicate with the kubernetes/openshift cluster.
-//
-// Some of the main methods:
-// 1. Call a function
-// 2. Get Log from a function call
 func NewKexec(c *KexecConfig) (*Kexec, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", c.KubeConfig)
 	if err != nil {
@@ -57,8 +53,10 @@ func NewKexec(c *KexecConfig) (*Kexec, error) {
 	}, nil
 }
 
-// CallFunction will create a Job template and then create the Job
+// Create a job template and then create the job
 // instance against the specified kubernetes/openshift cluster.
+//
+// Returns:		(error) if there is one
 func (k *Kexec) CreateFunctionJob(jobname, image, params, namespace string, labels map[string]string) error {
 	template := createJobTemplate(image, jobname, params, namespace, labels)
 
@@ -70,34 +68,39 @@ func (k *Kexec) CreateFunctionJob(jobname, image, params, namespace string, labe
 	return nil
 }
 
-// GetFunctionLog gets the log information for a pod execution.
-// This function doesn't consider multiple pods for one execution;
-// if there are multiple pods for this function execution, it will
-// only return one of them.
+// Get the log for the job.
+// This function loop over all pods created by the job and return
+// the log of the first non-pending and non-running one.
 //
+// Returns: (string) pod status
+//			([]byte) pod log
+//			(error) if there is one
 // TODO: Logs should be return in full if there are multiple pods
 //       for one function execution.
-func (k *Kexec) GetFunctionLog(jobName, namespace string) ([]byte, error) {
+func (k *Kexec) GetFunctionLog(jobName, namespace string) (string, []byte, error) {
 
 	podlist, err := k.getFunctionPods(jobName, namespace)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	if len(podlist.Items) < 1 {
-		return nil, errors.New(fmt.Sprintf("No pod found for job %s.", jobName))
+		return "", nil, errors.New(fmt.Sprintf("No pod found for job %s.", jobName))
 	}
 
+	// Get the name and status of the first non-pending and non-running pod
 	var podName string
+	var podPhase v1.PodPhase
 	for _, pod := range podlist.Items {
 		if pod.Status.Phase != v1.PodPending &&
 			pod.Status.Phase != v1.PodRunning {
 			podName = pod.Name
+			podPhase = pod.Status.Phase
 			break
 		}
 	}
 	if podName == "" {
-		return nil, errors.New(fmt.Sprintf("No completed pod for job %s.", jobName))
+		return "", nil, errors.New(fmt.Sprintf("No completed pod for job %s.", jobName))
 	}
 
 	opts := &v1.PodLogOptions{
@@ -108,17 +111,23 @@ func (k *Kexec) GetFunctionLog(jobName, namespace string) ([]byte, error) {
 	response, err := k.Clientset.Core().Pods(namespace).GetLogs(podName, opts).Stream()
 
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	defer response.Close()
 
 	log.Println("Got log of pod", podName)
 
-	return ioutil.ReadAll(response)
+	status := string(podPhase)
+	log.Println("Job", jobName, "status:", status)
+
+	res, err := ioutil.ReadAll(response)
+	return status, res, err
 }
 
-// public fuction to get pod(s) that ran a specific function execution.
+// Get pod(s) that ran a specific function execution (job).
+//
+// Returns:	pod list
 func (k *Kexec) GetFunctionPods(jobName, namespace string) (*v1.PodList, error) {
 	return k.getFunctionPods(jobName, namespace)
 }
@@ -126,15 +135,13 @@ func (k *Kexec) GetFunctionPods(jobName, namespace string) (*v1.PodList, error) 
 // Wait for job to complete and delete the job.
 // Note in Kubernetes when a Pod fails, then the Job controller starts a new Pod.
 // The current implementation waits for the first pod completes and exits.
-func (k *Kexec) RunJob(jobName, namespace string) (string, error) {
+func (k *Kexec) RunJob(jobName, namespace string) error {
 	// Wait for first pod completes
-	podPhase, err := k.waitForPodComplete(jobName, namespace)
+	_, err := k.waitForPodComplete(jobName, namespace)
 	if err != nil {
-		return "", err
+		return err
 	}
-	res := string(podPhase)
-	log.Println("Job", jobName, "status:", res)
-	return res, nil
+	return nil
 }
 
 // Delete the entire job and its pods
@@ -153,6 +160,7 @@ func (k *Kexec) DeleteFunctionJob(jobName, namespace string) error {
 	return nil
 }
 
+// Delete all pods for a specific job
 func (k *Kexec) DeleteFunctionPods(jobName, namespace string) error {
 	var deleteOrphanDep = true
 	deleteOptions := api.DeleteOptions{
@@ -169,6 +177,15 @@ func (k *Kexec) DeleteFunctionPods(jobName, namespace string) error {
 	}
 
 	return k.Clientset.Core().Pods(namespace).DeleteCollection(&deleteOptions, listOptions)
+}
+
+// Create a namespace if it does not exist
+func (k *Kexec) CreateUserNamespaceIfNotExist(namespace string) (*v1.Namespace, error) {
+	if ns, err := k.Clientset.Core().Namespaces().Get(namespace); err == nil {
+		log.Println("Namespace", namespace, "already exists!")
+		return ns, nil
+	}
+	return k.createNamespace(namespace)
 }
 
 func (k *Kexec) waitForPodComplete(jobName, namespace string) (v1.PodPhase, error) {
@@ -212,15 +229,6 @@ func (k *Kexec) waitForPodComplete(jobName, namespace string) (v1.PodPhase, erro
 		}
 	}()
 	return podPhase, err
-}
-
-// public function to create a namespace if it does not exist
-func (k *Kexec) CreateUserNamespaceIfNotExist(namespace string) (*v1.Namespace, error) {
-	if ns, err := k.Clientset.Core().Namespaces().Get(namespace); err == nil {
-		log.Println("Namespace", namespace, "already exists!")
-		return ns, nil
-	}
-	return k.createNamespace(namespace)
 }
 
 // private function to help get the exact pod(s) that ran a specific
