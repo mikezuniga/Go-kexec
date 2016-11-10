@@ -93,15 +93,21 @@ var routes = Routes{
 		CreateFunctionHandler,
 	},
 	Route{
-		"Edit",
+		"View",
 		"GET",
 		"/functions/{function}",
-		EditFuncPageHandler,
+		ViewFuncPageHandler,
+	},
+	Route{
+		"Edit",
+		"POST",
+		"/functions/{function}/edit",
+		EditFunctionHandler,
 	},
 	Route{
 		"Delete",
 		"POST",
-		"/functions/{function}",
+		"/functions/{function}/delete",
 		DeleteFunctionHandler,
 	},
 	Route{

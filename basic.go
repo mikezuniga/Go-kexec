@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -26,11 +25,6 @@ func createFunction(a *appContext, userName, functionName, runtime, code string)
 		return errors.New("No runtime selected.")
 	} else if code == "" {
 		return errors.New("Function code is empty.")
-	}
-
-	// Check if function already exists
-	if _, err := a.dal.GetFunction(userName, functionName); err != sql.ErrNoRows {
-		return errors.New(fmt.Sprintf("Function %s already exists for user %s.", functionName, userName))
 	}
 
 	newCode := formatCode(code, functionName)

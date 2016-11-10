@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -112,7 +114,7 @@ func CreateFuncPageHandler(a *appContext, response http.ResponseWriter, request 
 	return nil
 }
 
-func EditFuncPageHandler(a *appContext, response http.ResponseWriter, request *http.Request) error {
+func ViewFuncPageHandler(a *appContext, response http.ResponseWriter, request *http.Request) error {
 	userName := getUserName(a, request)
 	if userName == "" {
 		http.Redirect(response, request, "/", http.StatusFound)
@@ -165,6 +167,34 @@ func CreateFunctionHandler(a *appContext, response http.ResponseWriter, request 
 		//   2. Create the execution file for the function
 		//   3. Write the function code to the execution file
 		//   4. Build the function (ie build docker image)
+		functionName := request.FormValue("functionName")
+		runtime := request.FormValue("runtime")
+		code := request.FormValue("codeTextarea")
+
+		// Check if function already exists
+		if _, err := a.dal.GetFunction(userName, functionName); err != sql.ErrNoRows {
+			return StatusError{Code: http.StatusFound,
+				Err:         errors.New(fmt.Sprintf("Function %s already exists for user %s.", functionName, userName)),
+				UserMsg:     MessageCreateFunctionFailed,
+				SendErrResp: true}
+
+		}
+
+		if err := createFunction(a, userName, functionName, runtime, code); err != nil {
+			return StatusError{Code: http.StatusFound,
+				Err:         err,
+				UserMsg:     MessageCreateFunctionFailed,
+				SendErrResp: true}
+		}
+	}
+	return nil
+}
+
+func EditFunctionHandler(a *appContext, response http.ResponseWriter, request *http.Request) error {
+	userName := getUserName(a, request)
+	if userName == "" {
+		http.Redirect(response, request, "/", http.StatusFound)
+	} else {
 		functionName := request.FormValue("functionName")
 		runtime := request.FormValue("runtime")
 		code := request.FormValue("codeTextarea")
