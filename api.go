@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,15 +11,51 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type ApiCallResult struct {
+	Result  string `json:"result"`
+	Log     string `json:"log"`
+	Message string `json:"message"`
+}
+
+var ResError = "Error"
+
 func ApiCallFunctionHandler(a *appContext, response http.ResponseWriter, request *http.Request) error {
+
+	res := callUserFunction(a, request)
+
+	// Log the error if there is one
+	if res.Message != "" {
+		log.Println(res.Message)
+	}
+
+	// Write to response
+	if err := json.NewEncoder(response).Encode(res); err != nil {
+		return StatusError{http.StatusInternalServerError, err, MessageCallFunctionFailed, true}
+	}
+	return nil
+}
+
+func callUserFunction(a *appContext, request *http.Request) ApiCallResult {
 	vars := mux.Vars(request)
 	userName := vars["username"]
 	functionName := vars["function"]
+	// Sanity check
+	if userName == "" || functionName == "" {
+		return ApiCallResult{ResError, "", "Missing user name or function name."}
+	}
+
+	// Check if function already exists
+	_, err := a.dal.GetFunction(userName, functionName)
+	if err == sql.ErrNoRows {
+		return ApiCallResult{ResError, "", fmt.Sprintf("Function %s not exist for user %s.", functionName, userName)}
+	} else if err != nil {
+		return ApiCallResult{ResError, "", err.Error()}
+	}
 
 	// Get function parameters from request body
 	params, err := ioutil.ReadAll(request.Body)
 	if err != nil {
-		return StatusError{Code: http.StatusFound, Err: err, UserMsg: MessageCallFunctionFailed}
+		return ApiCallResult{ResError, "", err.Error()}
 	}
 	paramsStr := string(params)
 	if paramsStr == "" {
@@ -29,9 +67,8 @@ func ApiCallFunctionHandler(a *appContext, response http.ResponseWriter, request
 	// Call function. This will create a job in OpenShift
 	status, funcLog, err := callFunction(a, userName, functionName, paramsStr)
 	if err != nil {
-		return StatusError{Code: http.StatusFound, Err: err, UserMsg: MessageCallFunctionFailed}
+		return ApiCallResult{ResError, "", err.Error()}
 	}
-	// Write to response
-	fmt.Fprintf(response, "Execution %s.\nResult:\n%s\n", status, string(funcLog))
-	return nil
+
+	return ApiCallResult{status, funcLog, ""}
 }
