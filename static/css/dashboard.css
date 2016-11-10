@@ -132,3 +132,14 @@ body {
 .dropdownbtn:hover {
   background-color: #e7e7e7;
 }
+
+.result {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  margin: 0 0 0 -195px;
+  padding-top: 20px;
+  width: 390px;
+  max-height: none;
+  text-align: center;
+}
