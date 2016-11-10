@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -18,6 +19,13 @@ type Route struct {
 type Routes []Route
 
 func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	log.Printf(
+		"%s\t%s\t%s\n",
+		r.Method,
+		r.RequestURI,
+		time.Since(start),
+	)
 	err := ah.H(ah.appContext, w, r)
 	if err != nil {
 		switch e := err.(type) {
