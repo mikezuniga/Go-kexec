@@ -93,11 +93,10 @@ func DashboardHandler(a *appContext, response http.ResponseWriter, request *http
 	userName := getUserName(a, request)
 	if userName != "" {
 		functions, err := getUserFunctions(a, userName, -1)
-		// Cannot list the function, return a page with no function name
 		if err != nil {
 			log.Println("Cannot list functions for", userName)
-			DashboardTemplate.Execute(response, &DashboardPage{Username: userName})
-			return nil
+			return StatusError{Code: http.StatusInternalServerError,
+				Err: err, UserMsg: MessageInternalServerError}
 		}
 
 		DashboardTemplate.Execute(response, &DashboardPage{Username: userName, Functions: functions})
