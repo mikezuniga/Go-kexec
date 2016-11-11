@@ -15,7 +15,11 @@
 
       <form class="form-signin" method="post" action="/login">
         <h2 class="form-signin-heading">Please log in</h2>
-		<p>{{if .LoginErr}} Error: {{.ErrMsg}} {{end}}</p>
+		{{if .LoginErr}}
+		  <div class="alert alert-danger">
+			Error: {{.ErrMsg}}
+		  </div>
+		{{end}}
         <label for="name" class="sr-only">Username</label>
         <input type="text" id="name" name="name" class="form-control" placeholder="Username" required autofocus>
         <label for="password" class="sr-only">Password</label>
@@ -28,7 +32,7 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="js/ie10-viewport-bug-workaround.js"></script>
+    <script src="/js/ie10-viewport-bug-workaround.js"></script>
 </body>
 </html>
 

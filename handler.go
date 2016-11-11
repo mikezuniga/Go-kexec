@@ -53,6 +53,9 @@ func LoginHandler(a *appContext, response http.ResponseWriter, request *http.Req
 					break
 				}
 			}
+			if ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject) {
+				errMsg = "Invalid username"
+			}
 			LoginTemplate.Execute(response, &LoginPage{LoginErr: true, ErrMsg: errMsg})
 			return nil
 		}

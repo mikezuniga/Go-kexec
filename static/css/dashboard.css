@@ -143,3 +143,9 @@ body {
   max-height: none;
   text-align: center;
 }
+
+@media (min-width: 768px) {
+.modal-dialog.small {
+    width: 300px; /* respsonsive width */
+}
+}
