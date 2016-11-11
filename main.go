@@ -14,7 +14,10 @@ import (
 	"github.com/gorilla/securecookie"
 )
 
-var argConfigFile = flag.String("config", "", "Config file")
+var (
+	argConfigFile        = flag.String("config", "", "Config file")
+	SERVERLESS_NAMESPACE = "serverless"
+)
 
 func main() {
 	flag.Parse()

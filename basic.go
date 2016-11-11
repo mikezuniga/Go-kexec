@@ -97,16 +97,10 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 		return "", "", err
 	}
 
-	uuidStr := uuid.String() // uuidStr needed when fetching log
+	uuidStr := uuid.String()
 
-	// Create a namespace for the user and run the job
-	// in that namespace
-	nsName := strings.Replace(userName, "_", "-", -1) + "-serverless"
-	if _, err := a.k.CreateUserNamespaceIfNotExist(nsName); err != nil {
-		log.Println("Failed to get/create user namespace", nsName)
-		return "", "", err
-	}
-	jobName := functionName + "-" + uuidStr
+	nsName := SERVERLESS_NAMESPACE
+	jobName := functionName + "-" + strings.Replace(userName, "_", "-", -1) + "-" + uuidStr
 	image := a.conf.DockerRegistry + "/" + userName + "/" + functionName
 	labels := make(map[string]string)
 
