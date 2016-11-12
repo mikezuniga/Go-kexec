@@ -144,6 +144,11 @@ body {
   text-align: center;
 }
 
+#callResult {
+  text-align: left;
+  width: 600px;
+}
+
 @media (min-width: 768px) {
 .modal-dialog.small {
     width: 300px; /* respsonsive width */
