@@ -252,7 +252,7 @@ func openLogFile(dir string) (*os.File, error) {
 			return nil, err
 		}
 	}
-	logfile, err := os.Create(filepath.Join(dir, "serverless.log"))
+	logfile, err := os.OpenFile(filepath.Join(dir, "serverless.log"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return nil, err
 	}
