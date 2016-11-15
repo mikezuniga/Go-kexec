@@ -168,6 +168,7 @@ func CreateFunctionHandler(a *appContext, response http.ResponseWriter, request 
 
 		// Check if function already exists
 		if _, err := a.dal.GetFunction(userName, functionName); err != sql.ErrNoRows {
+			log.Println(err)
 			return StatusError{Code: http.StatusFound,
 				Err:         errors.New(fmt.Sprintf("Function %s already exists for user %s.", functionName, userName)),
 				UserMsg:     MessageCreateFunctionFailed,

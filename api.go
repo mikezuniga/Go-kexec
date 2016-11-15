@@ -29,7 +29,11 @@ func ApiCallFunctionHandler(a *appContext, response http.ResponseWriter, request
 	}
 
 	// Write to response
-	if err := json.NewEncoder(response).Encode(res); err != nil {
+	response.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	response.WriteHeader(http.StatusOK)
+	e := json.NewEncoder(response)
+	e.SetIndent("", "\t")
+	if err := e.Encode(res); err != nil {
 		return StatusError{http.StatusInternalServerError, err, MessageCallFunctionFailed, true}
 	}
 	return nil
