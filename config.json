@@ -1,9 +1,22 @@
 {
 	"FileServerDir": "static",
 	"LogFileDir": "/tmp/log",
-	"DockerRegistry": "registry.paas.symcpe.com:443",
-	"LDAPcfg":
-	{
+	"KubeConfig": "/root/.kube/config",
+	"DockerCfg": {
+		"HttpHeader": {
+			"User-Agent": "engin-api-cli-1.0"
+		},
+		"DockerHost": "unix:///var/run/docker.sock",
+		"ApiVersion": "v1.22",
+		"DockerRegistry": "registry.paas.symcpe.com:443"
+	},
+	"DalCfg": {
+		"DBHost": "100.73.145.91",
+		"Username": "kexec",
+		"Password": "password",
+		"DBName": "kexec"
+	},
+	"LDAPCfg": {
 		"LDAPServer": ["ds.symcpe.net"],
 		"LDAPPort": 636,
 		"LDAPRetries": 3,

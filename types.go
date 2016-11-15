@@ -46,17 +46,35 @@ func (se StatusError) SendErrorResponse() bool {
 }
 
 type appConfig struct {
-	FileServerDir  string
-	LogFileDir     string
-	DockerRegistry string
-	LDAPcfg        ldapConfig
+	FileServerDir string
+	LogFileDir    string
+	KubeConfig    string
+	DockerCfg     dockerConfig
+	DalCfg        dalConfig
+	LDAPCfg       ldapConfig
 }
+
+type dockerConfig struct {
+	HttpHeader     map[string]string
+	DockerHost     string
+	ApiVersion     string
+	DockerRegistry string
+}
+
+type dalConfig struct {
+	DBHost   string
+	Username string
+	Password string
+	DBName   string
+}
+
 type ldapConfig struct {
 	LDAPServer  []string
 	LDAPPort    int
 	LDAPRetries int
 	LDAPBaseDn  string
 }
+
 type appContext struct {
 	d             *docker.Docker
 	k             *kexec.Kexec
@@ -64,7 +82,9 @@ type appContext struct {
 	cookieHandler *securecookie.SecureCookie
 	conf          *appConfig
 }
+
 type appRouteHandler func(*appContext, http.ResponseWriter, *http.Request) error
+
 type appHandler struct {
 	*appContext
 	H appRouteHandler

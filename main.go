@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/Symantec/Go-kexec/dal"
 	"github.com/Symantec/Go-kexec/docker"
@@ -15,8 +14,14 @@ import (
 )
 
 var (
-	argConfigFile        = flag.String("config", "", "Config file")
-	SERVERLESS_NAMESPACE = "serverless"
+	argConfigFile = flag.String("config", "", "Config file")
+)
+
+const (
+	SERVERLESS_NAMESPACE string = "serverless"
+	DAL_USERS_TABLE      string = "users"
+	DAL_FUNCTIONS_TABLE  string = "functions"
+	DAL_EXECUTIONS_TABLE string = "executions"
 )
 
 func main() {
@@ -33,7 +38,7 @@ func main() {
 
 	logfile, err := openLogFile(conf.LogFileDir)
 	if err != nil {
-		log.Fatalf("Cannot open logfile: %v\n", err)
+		log.Fatalf("Cannot open log file: %v\n", err)
 	}
 
 	log.SetOutput(logfile)
@@ -49,11 +54,11 @@ func main() {
 	// to docker registry
 	d := docker.NewDocker(
 		// http headers
-		map[string]string{"User-Agent": "engin-api-cli-1.0"},
+		conf.DockerCfg.HttpHeader,
 		// docker host
-		"unix:///var/run/docker.sock",
+		conf.DockerCfg.DockerHost,
 		// docker api version
-		"v1.22",
+		conf.DockerCfg.ApiVersion,
 		// http client
 		nil,
 	)
@@ -61,7 +66,7 @@ func main() {
 	// kubernetes handler for calling function and pulling function
 	// execution logs
 	k, err := kexec.NewKexec(&kexec.KexecConfig{
-		KubeConfig: os.Getenv("HOME") + "/.kube/config",
+		KubeConfig: conf.KubeConfig,
 	})
 
 	if err != nil {
@@ -72,15 +77,15 @@ func main() {
 	//
 	// TODO: dal should be pluggable
 	dal, err := dal.NewMySQL(&dal.DalConfig{
-		DBHost:   "100.73.145.91",
-		Username: "kexec",
-		Password: "password",
+		DBHost:   conf.DalCfg.DBHost,
+		Username: conf.DalCfg.Username,
+		Password: conf.DalCfg.Password,
 
-		DBName: "kexec",
+		DBName: conf.DalCfg.DBName,
 
-		UsersTable:      "users",
-		FunctionsTable:  "functions",
-		ExecutionsTable: "executions",
+		UsersTable:      DAL_USERS_TABLE,
+		FunctionsTable:  DAL_FUNCTIONS_TABLE,
+		ExecutionsTable: DAL_EXECUTIONS_TABLE,
 	})
 
 	if err != nil {

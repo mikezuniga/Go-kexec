@@ -63,13 +63,13 @@ func createFunction(a *appContext, userName, functionName, runtime, code string)
 	}
 
 	// Build funtion
-	if err = a.d.BuildFunction(a.conf.DockerRegistry, userName, functionName, runtime, ctxDir); err != nil {
+	if err = a.d.BuildFunction(a.conf.DockerCfg.DockerRegistry, userName, functionName, runtime, ctxDir); err != nil {
 		log.Println("Build function failed")
 		return err
 	}
 
 	// Register function to configured docker registry
-	if err = docker.RegisterFunction(a.conf.DockerRegistry, userName, functionName); err != nil {
+	if err = docker.RegisterFunction(a.conf.DockerCfg.DockerRegistry, userName, functionName); err != nil {
 		log.Println("Register function failed")
 		return err
 	}
@@ -101,7 +101,7 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 
 	nsName := SERVERLESS_NAMESPACE
 	jobName := functionName + "-" + strings.Replace(userName, "_", "-", -1) + "-" + uuidStr
-	image := a.conf.DockerRegistry + "/" + userName + "/" + functionName
+	image := a.conf.DockerCfg.DockerRegistry + "/" + userName + "/" + functionName
 	labels := make(map[string]string)
 
 	if err := a.k.CreateFunctionJob(jobName, image, params, nsName, labels); err != nil {
@@ -194,10 +194,10 @@ func checkCredentials(a *appContext, name string, pass string) (bool, error) {
 	var l *ldap.Conn
 	var err error
 
-	servers := a.conf.LDAPcfg.LDAPServer
-	port := a.conf.LDAPcfg.LDAPPort
-	retries := a.conf.LDAPcfg.LDAPRetries
-	username := fmt.Sprintf(a.conf.LDAPcfg.LDAPBaseDn, name)
+	servers := a.conf.LDAPCfg.LDAPServer
+	port := a.conf.LDAPCfg.LDAPPort
+	retries := a.conf.LDAPCfg.LDAPRetries
+	username := fmt.Sprintf(a.conf.LDAPCfg.LDAPBaseDn, name)
 
 	log.Println("Authenticating user", name)
 
