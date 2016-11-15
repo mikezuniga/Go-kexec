@@ -112,8 +112,6 @@ body {
 
 #myTextarea {
   position: relative;
-  left:15px;
-  width:980px;
   height:100px;
   border-style: solid;
   border-color:#666;
