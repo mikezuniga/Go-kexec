@@ -55,9 +55,7 @@ type appConfig struct {
 }
 
 type dockerConfig struct {
-	HttpHeader     map[string]string
 	DockerHost     string
-	ApiVersion     string
 	DockerRegistry string
 }
 

@@ -63,16 +63,10 @@ func main() {
 
 	// docker handler for creating function and pushing function image
 	// to docker registry
-	d := docker.NewDocker(
-		// http headers
-		conf.DockerCfg.HttpHeader,
-		// docker host
-		conf.DockerCfg.DockerHost,
-		// docker api version
-		conf.DockerCfg.ApiVersion,
-		// http client
-		nil,
-	)
+	d, err := docker.NewClient(conf.DockerCfg.DockerHost)
+	if err != nil {
+		panic(err)
+	}
 
 	// kubernetes handler for calling function and pulling function
 	// execution logs

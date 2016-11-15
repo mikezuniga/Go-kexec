@@ -3,11 +3,7 @@
 	"LogFileDir": "/tmp/log",
 	"KubeConfig": "/root/.kube/config",
 	"DockerCfg": {
-		"HttpHeader": {
-			"User-Agent": "engin-api-cli-1.0"
-		},
 		"DockerHost": "unix:///var/run/docker.sock",
-		"ApiVersion": "v1.22",
 		"DockerRegistry": "registry.paas.symcpe.com:443"
 	},
 	"DalCfg": {

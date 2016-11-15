@@ -140,10 +140,18 @@ func DeleteFunctionHandler(a *appContext, response http.ResponseWriter, request 
 		vars := mux.Vars(request)
 		functionName := vars["function"]
 
+		// Delete function in the database
 		if err := a.dal.DeleteFunction(userName, functionName); err != nil {
 			return StatusError{Code: http.StatusInternalServerError,
 				Err: err, UserMsg: MessageInternalServerError}
 		}
+
+		// Delete function image
+		if err := a.d.DeleteFunctionImage(a.conf.DockerCfg.DockerRegistry, userName, functionName); err != nil {
+			return StatusError{Code: http.StatusInternalServerError,
+				Err: err, UserMsg: MessageInternalServerError}
+		}
+
 		DeleteFuncTemplate.Execute(response, nil)
 	}
 	return nil

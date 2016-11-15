@@ -1,26 +1,17 @@
 package docker
 
 import (
+	"archive/tar"
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
-	"golang.org/x/net/context"
-
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/builder"
-	"github.com/docker/docker/builder/dockerignore"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/archive"
-	"github.com/docker/docker/pkg/fileutils"
-	"github.com/docker/docker/pkg/progress"
-	"github.com/docker/docker/pkg/streamformatter"
+	dc "github.com/fsouza/go-dockerclient"
 )
 
 var (
@@ -30,23 +21,12 @@ var (
 )
 
 type Docker struct {
-	HttpHeaders map[string]string
-	Host        string
-	Version     string
-	HttpClient  *http.Client
+	client *dc.Client
 }
 
-func NewDocker(httpHeader map[string]string, host, version string, httpClient *http.Client) *Docker {
-	return &Docker{
-		HttpHeaders: httpHeader,
-		Host:        host,
-		Version:     version,
-		HttpClient:  httpClient,
-	}
-}
-
-func (d *Docker) initCli() (*client.Client, error) {
-	return client.NewClient(d.Host, d.Version, d.HttpClient, d.HttpHeaders)
+func NewClient(endpoint string) (*Docker, error) {
+	client, err := dc.NewClient(endpoint)
+	return &Docker{client}, err
 }
 
 func (d *Docker) BuildFunction(registry, namespace, funcName, templateName, ctxDir string) error {
@@ -60,76 +40,70 @@ func (d *Docker) BuildFunction(registry, namespace, funcName, templateName, ctxD
 		return err
 	}
 
-	f, err := os.Open(filepath.Join(ctxDir, ".dockerignore"))
+	// Create a tar ball
+	t := time.Now()
+	inputbuf, outputbuf := bytes.NewBuffer(nil), bytes.NewBuffer(nil)
+	tr := tar.NewWriter(inputbuf)
+	defer tr.Close()
 
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	defer f.Close()
-
-	var excludes []string
-	if err == nil {
-		excludes, err = dockerignore.ReadAll(f)
-		if err != nil {
+	log.Println("Building context", ctxDir)
+	if err := filepath.Walk(ctxDir,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			log.Println("Adding file", info.Name())
+			tr.WriteHeader(&tar.Header{Name: info.Name(), Size: info.Size(), ModTime: t, AccessTime: t, ChangeTime: t})
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			_, err = io.Copy(tr, file)
 			return err
-		}
-	}
-
-	if err := builder.ValidateContextDirectory(ctxDir, excludes); err != nil {
-		return fmt.Errorf("Error checking context: '%s'.", err)
-	}
-
-	var includes = []string{"."}
-	keepThem1, _ := fileutils.Matches(".dockerignore", excludes)
-	keepThem2, _ := fileutils.Matches(RelDockerfile, excludes)
-	if keepThem1 || keepThem2 {
-		includes = append(includes, ".dockerignore", RelDockerfile)
-	}
-
-	buildCtx, err := archive.TarWithOptions(ctxDir, &archive.TarOptions{
-		Compression:     archive.Uncompressed,
-		ExcludePatterns: excludes,
-		IncludeFiles:    includes,
-	})
-
-	if err != nil {
+		}); err != nil {
 		return err
 	}
 
-	progressOutput := streamformatter.NewStreamFormatter().NewProgressOutput(bytes.NewBuffer(nil), true)
-	var body io.Reader = progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
-
-	opts := types.ImageBuildOptions{
-		Tags:       []string{registry + "/" + namespace + "/" + funcName},
-		Dockerfile: RelDockerfile,
-		Squash:     true,
+	// Build image
+	opts := dc.BuildImageOptions{
+		Name:         registry + "/" + namespace + "/" + funcName,
+		InputStream:  inputbuf,
+		OutputStream: outputbuf,
 	}
-
-	cli, err := d.initCli()
-
-	if err != nil {
-		log.Printf("Failed to init cli. Error: %s", err)
+	if err := d.client.BuildImage(opts); err != nil {
 		return err
 	}
+	log.Println(string(outputbuf.Bytes()))
 
-	resp, err := cli.ImageBuild(context.Background(), body, opts)
+	return nil
+}
 
-	if err != nil {
-		log.Printf("Failed to build image. Error: %s", err)
+func (d *Docker) RegisterFunction(registry, namespace, funcName string) error {
+	outputbuf := bytes.NewBuffer(nil)
+	opts := dc.PushImageOptions{
+		Name:         registry + "/" + namespace + "/" + funcName,
+		Tag:          "latest",
+		Registry:     registry,
+		OutputStream: outputbuf,
+	}
+	if err := d.client.PushImage(opts, dc.AuthConfiguration{}); err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	log.Println(string(outputbuf.Bytes()))
+	return nil
+}
 
-	buf, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		log.Printf("Failed to read response body. Error: %s", err)
+func (d *Docker) DeleteFunctionImage(registry, namespace, funcName string) error {
+	opts := dc.RemoveImageOptions{
+		Force: true,
+	}
+	if err := d.client.RemoveImageExtended(registry+"/"+namespace+"/"+funcName, opts); err != nil {
 		return err
 	}
-
-	log.Printf("Image build response Body: %s", string(buf))
-	log.Printf("Image build response OSType: %s", resp.OSType)
-
 	return nil
 }
 

@@ -69,7 +69,7 @@ func createFunction(a *appContext, userName, functionName, runtime, code string)
 	}
 
 	// Register function to configured docker registry
-	if err = docker.RegisterFunction(a.conf.DockerCfg.DockerRegistry, userName, functionName); err != nil {
+	if err = a.d.RegisterFunction(a.conf.DockerCfg.DockerRegistry, userName, functionName); err != nil {
 		log.Println("Register function failed")
 		return err
 	}
