@@ -293,7 +293,7 @@ func (dal *MySQL) GetFunction(userName, funcName string) (string, error) {
 
 	var content string
 	err := dal.QueryRow(fmt.Sprintf(
-		"SELECT content FROM %s f JOIN %s u WHERE f.name = ? AND u.name = ?",
+		"SELECT content FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
 		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(&content)
 	if err != nil {
 		return "", err

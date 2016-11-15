@@ -50,6 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cannot open log file: %v\n", err)
 	}
+	defer logfile.Close()
 
 	log.SetOutput(logfile)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)

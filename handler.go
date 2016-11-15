@@ -75,8 +75,9 @@ func LoginHandler(a *appContext, response http.ResponseWriter, request *http.Req
 }
 
 func LogoutHandler(a *appContext, response http.ResponseWriter, request *http.Request) error {
+	userName := getUserName(a, request)
 	clearSession(response)
-	log.Println("Logged out")
+	log.Println("Logged out", userName)
 	http.Redirect(response, request, "/", http.StatusFound)
 	return nil
 }
