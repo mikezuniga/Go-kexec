@@ -63,9 +63,9 @@ func callUserFunction(a *appContext, request *http.Request) ApiCallResult {
 	}
 	paramsStr := string(params)
 	if paramsStr == "" {
-		log.Println("Calling function", functionName)
+		log.Println("Calling function", functionName, "for user", userName)
 	} else {
-		log.Println("Calling function", functionName, "with parameters", paramsStr)
+		log.Println("Calling function", functionName, "with parameters", paramsStr, "for user", userName)
 	}
 
 	// Call function. This will create a job in OpenShift

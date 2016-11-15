@@ -223,7 +223,7 @@ func (k *Kexec) waitForPodComplete(jobName, namespace string) (v1.PodPhase, erro
 					log.Println("Pod status unknown. Reason:", resp.Status.Reason)
 				}
 			case <-time.After(MaxPodExecTime * time.Second):
-				err = errors.New("Timeout to wait for pod completes")
+				err = errors.New("Function takes too long to complete.")
 				w.Stop()
 			}
 		}
