@@ -240,3 +240,21 @@ func formatCode(code, functionName string) string {
 		"params = os.environ[\"SERVERLESS_PARAMS\"]\n"+
 		"%s(json.loads(params))\n", code, functionName)
 }
+
+func openLogFile(dir string) (*os.File, error) {
+	_, err := os.Stat(dir)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	if os.IsNotExist(err) {
+		if err := os.Mkdir(dir, os.ModePerm); err != nil {
+			return nil, err
+		}
+	}
+	logfile, err := os.Create(filepath.Join(dir, "serverless.log"))
+	if err != nil {
+		return nil, err
+	}
+	return logfile, nil
+}

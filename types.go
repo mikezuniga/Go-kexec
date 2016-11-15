@@ -47,6 +47,7 @@ func (se StatusError) SendErrorResponse() bool {
 
 type appConfig struct {
 	FileServerDir  string
+	LogFileDir     string
 	DockerRegistry string
 	LDAPcfg        ldapConfig
 }

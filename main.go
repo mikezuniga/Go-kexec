@@ -31,6 +31,14 @@ func main() {
 		log.Fatalf("Cannot load config file %s: %v\n", *argConfigFile, err)
 	}
 
+	logfile, err := openLogFile(conf.LogFileDir)
+	if err != nil {
+		log.Fatalf("Cannot open logfile: %v\n", err)
+	}
+
+	log.SetOutput(logfile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
 	// cookie handling
 	cookieHandler := securecookie.New(
 		securecookie.GenerateRandomKey(64),

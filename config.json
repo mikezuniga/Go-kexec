@@ -1,5 +1,6 @@
 {
 	"FileServerDir": "static",
+	"LogFileDir": "/tmp/log",
 	"DockerRegistry": "registry.paas.symcpe.com:443",
 	"LDAPcfg":
 	{
