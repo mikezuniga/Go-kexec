@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 
@@ -16,13 +15,6 @@ var (
 	MessageCreateFunctionFailed = "Failed to create function"
 	MessageCallFunctionFailed   = "Failed to call function"
 	MessageInternalServerError  = "Server Error"
-
-	LoginTemplate      = template.Must(template.ParseFiles("html/login.html"))
-	DashboardTemplate  = template.Must(template.ParseFiles("html/dashboard.html"))
-	ConfFuncTemplate   = template.Must(template.ParseFiles("html/configure_func.html"))
-	FuncCalledTemplate = template.Must(template.ParseFiles("html/func_called.html"))
-	ErrorTemplate      = template.Must(template.ParseFiles("html/error.html"))
-	DeleteFuncTemplate = template.Must(template.ParseFiles("html/func_deleted.html"))
 )
 
 func IndexPageHandler(a *appContext, response http.ResponseWriter, request *http.Request) error {

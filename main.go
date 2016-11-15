@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/Symantec/Go-kexec/dal"
 	"github.com/Symantec/Go-kexec/docker"
@@ -14,7 +16,13 @@ import (
 )
 
 var (
-	argConfigFile = flag.String("config", "", "Config file")
+	argConfigFile      = flag.String("config", "", "Config file")
+	LoginTemplate      *template.Template
+	DashboardTemplate  *template.Template
+	ConfFuncTemplate   *template.Template
+	FuncCalledTemplate *template.Template
+	ErrorTemplate      *template.Template
+	DeleteFuncTemplate *template.Template
 )
 
 const (
@@ -25,6 +33,7 @@ const (
 )
 
 func main() {
+	// load config file
 	flag.Parse()
 	configFile, err := ioutil.ReadFile(*argConfigFile)
 	if err != nil {
@@ -36,6 +45,7 @@ func main() {
 		log.Fatalf("Cannot load config file %s: %v\n", *argConfigFile, err)
 	}
 
+	// open log file
 	logfile, err := openLogFile(conf.LogFileDir)
 	if err != nil {
 		log.Fatalf("Cannot open log file: %v\n", err)
@@ -91,6 +101,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// initialize templates
+	LoginTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/login.html")))
+	DashboardTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/dashboard.html")))
+	ConfFuncTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/configure_func.html")))
+	FuncCalledTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/func_called.html")))
+	ErrorTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/error.html")))
+	DeleteFuncTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/func_deleted.html")))
 
 	context := &appContext{d: d, k: k, dal: dal, cookieHandler: cookieHandler, conf: &conf}
 
