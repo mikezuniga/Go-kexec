@@ -77,15 +77,15 @@ func (k *Kexec) CreateFunctionJob(jobname, image, params, namespace string, labe
 //			(error) if there is one
 // TODO: Logs should be return in full if there are multiple pods
 //       for one function execution.
-func (k *Kexec) GetFunctionLog(jobName, namespace string) (string, []byte, error) {
+func (k *Kexec) GetFunctionLog(jobName, namespace string) (string, string, error) {
 
 	podlist, err := k.getFunctionPods(jobName, namespace)
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
 	if len(podlist.Items) < 1 {
-		return "", nil, errors.New(fmt.Sprintf("No pod found for job %s.", jobName))
+		return "", "", errors.New(fmt.Sprintf("No pod found for job %s.", jobName))
 	}
 
 	// Get the name and status of the first non-pending and non-running pod
@@ -100,7 +100,7 @@ func (k *Kexec) GetFunctionLog(jobName, namespace string) (string, []byte, error
 		}
 	}
 	if podName == "" {
-		return "", nil, errors.New(fmt.Sprintf("No completed pod for job %s.", jobName))
+		return "", "", errors.New(fmt.Sprintf("No completed pod for job %s.", jobName))
 	}
 
 	opts := &v1.PodLogOptions{
@@ -111,7 +111,7 @@ func (k *Kexec) GetFunctionLog(jobName, namespace string) (string, []byte, error
 	response, err := k.Clientset.Core().Pods(namespace).GetLogs(podName, opts).Stream()
 
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
 	defer response.Close()
@@ -122,7 +122,7 @@ func (k *Kexec) GetFunctionLog(jobName, namespace string) (string, []byte, error
 	log.Println("Job", jobName, "status:", status)
 
 	res, err := ioutil.ReadAll(response)
-	return status, res, err
+	return status, string(res), err
 }
 
 // Get pod(s) that ran a specific function execution (job).

@@ -87,6 +87,8 @@ func createFunction(a *appContext, userName, functionName, runtime, code string)
 
 //return success/failed, log and error
 func callFunction(a *appContext, userName, functionName, params string) (string, string, error) {
+	var status, funcLog string
+
 	// create a uuid for each function call. This uuid can be
 	// seen as the execution id for the function (notice there
 	// are multiple executions for a single function)
@@ -111,22 +113,28 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 	// Run the job
 	err = a.k.RunJob(jobName, nsName)
 	if err != nil {
-		return "", "", err
+		goto delete
 	}
 
 	// Get the log
-	status, funcLog, err := a.k.GetFunctionLog(jobName, nsName)
+	status, funcLog, err = a.k.GetFunctionLog(jobName, nsName)
 	if err != nil {
-		return "", "", err
+		goto delete
 	}
-	log.Printf("Function Log:\n %s", string(funcLog))
+	log.Printf("Function Log:\n %s", funcLog)
 
 	// Delete the job
-	if err := a.k.DeleteFunctionJob(jobName, nsName); err != nil {
+delete:
+	err2 := a.k.DeleteFunctionJob(jobName, nsName)
+	if err2 != nil && err == nil {
+		return "", "", err2
+	} else if err2 != nil && err != nil {
+		return "", "", errors.New(err.Error() + "\n" + err2.Error())
+	} else if err2 == nil && err != nil {
 		return "", "", err
 	}
 
-	return status, string(funcLog), nil
+	return status, funcLog, nil
 }
 
 func setSession(a *appContext, userName string, response http.ResponseWriter) {
