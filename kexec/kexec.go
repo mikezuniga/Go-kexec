@@ -273,6 +273,10 @@ func (k *Kexec) createNamespace(namespace string) (*v1.Namespace, error) {
 //
 // TODO: 1. make parallelism configurable
 func createJobTemplate(image, jobname, params, namespace string, labels map[string]string) *batchv1.Job {
+	if params == "" {
+		params = "{}"
+	}
+
 	return &batchv1.Job{
 		TypeMeta: unversioned.TypeMeta{
 			Kind:       "Job",
