@@ -35,9 +35,9 @@
   <div class="form-group">
 	<label class="control-label col-sm-2" for="functionName">Name:</label>
 	<div class="col-sm-4">
-	  <input type="text" class="form-control" id="functionName" name="functionName" {{if .FuncName}}value="{{.FuncName}}" readonly{{else}}placeholder="myhandler" required{{end}}>
+	  <input type="text" class="form-control" id="functionName" name="functionName" {{if .FuncName}}value="{{.FuncName}}" readonly{{else}}placeholder="myHandler" required{{end}}>
 	</div>
-	<p class="col-sm-6">A valid function name can only contain letter and numbers. Example: myName. It has to be defined in the code below.</p>
+	<p class="col-sm-6">The function to be executed. It has to be defined in the code below. A valid function name can only contain letters and numbers. Example: myHandler.</p>
   </div>
   <div class="form-group">
 	<label class="control-label col-sm-2" for="runtime">Runtime:</label>
@@ -51,7 +51,7 @@
   <h4>Function code</h4>
   <hr>
   <div class="form-group">
-  <div class="col-sm-8" id="editor_div" required>{{if .FuncContent}}{{.FuncContent}}{{else}}def myhandler(params):
+  <div class="col-sm-8" id="editor_div" required>{{if .FuncContent}}{{.FuncContent}}{{else}}def myHandler(params):
     a = params["a"]
     b = params["b"]
     print "The sum is " + str(a+b) + "."{{end}}</div>

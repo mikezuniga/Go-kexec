@@ -24,7 +24,7 @@ type DAL interface {
 	//
 	// Returns: (string) function content
 	//			(error) if there is one
-	GetFunction(userName, funcName string) (string, error)
+	GetFunction(userName, funcName string) (string, string, error)
 
 	// Delete the function from the DB
 	//

@@ -49,7 +49,7 @@ func callUserFunction(a *appContext, request *http.Request) ApiCallResult {
 	}
 
 	// Check if function already exists
-	_, err := a.dal.GetFunction(userName, functionName)
+	_, _, err := a.dal.GetFunction(userName, functionName)
 	if err == sql.ErrNoRows {
 		return ApiCallResult{ResError, "", fmt.Sprintf("Function %s not exist for user %s.", functionName, userName)}
 	} else if err != nil {

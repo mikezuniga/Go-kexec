@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/ldap.v2"
@@ -117,7 +118,7 @@ func ViewFuncPageHandler(a *appContext, response http.ResponseWriter, request *h
 		vars := mux.Vars(request)
 		functionName := vars["function"]
 
-		content, err := a.dal.GetFunction(userName, functionName)
+		_, content, err := a.dal.GetFunction(userName, functionName)
 		if err != nil {
 			log.Println("Cannot get function", functionName)
 			return StatusError{Code: http.StatusInternalServerError,
@@ -147,7 +148,7 @@ func DeleteFunctionHandler(a *appContext, response http.ResponseWriter, request 
 		}
 
 		// Delete function image
-		if err := a.d.DeleteFunctionImage(a.conf.DockerCfg.DockerRegistry, userName, functionName); err != nil {
+		if err := a.d.DeleteFunctionImage(a.conf.DockerCfg.DockerRegistry, userName, strings.ToLower(functionName)); err != nil {
 			return StatusError{Code: http.StatusInternalServerError,
 				Err: err, UserMsg: MessageInternalServerError}
 		}
@@ -175,10 +176,11 @@ func CreateFunctionHandler(a *appContext, response http.ResponseWriter, request 
 		code := request.FormValue("codeTextarea")
 
 		// Check if function already exists
-		if _, err := a.dal.GetFunction(userName, functionName); err != sql.ErrNoRows {
+		if funcNameInDB, _, err := a.dal.GetFunction(userName, functionName); err != sql.ErrNoRows {
 			log.Println(err)
 			return StatusError{Code: http.StatusFound,
-				Err:         errors.New(fmt.Sprintf("Function %s already exists for user %s.", functionName, userName)),
+				Err: errors.New(fmt.Sprintf(
+					"Function %s already exists for user %s. Note: function name is case insentive", funcNameInDB, userName)),
 				UserMsg:     MessageCreateFunctionFailed,
 				SendErrResp: true}
 

@@ -62,14 +62,15 @@ func createFunction(a *appContext, userName, functionName, runtime, code string)
 		return err
 	}
 
+	functionNameLower := strings.ToLower(functionName)
 	// Build funtion
-	if err = a.d.BuildFunction(a.conf.DockerCfg.DockerRegistry, userName, functionName, runtime, ctxDir); err != nil {
+	if err = a.d.BuildFunction(a.conf.DockerCfg.DockerRegistry, userName, functionNameLower, runtime, ctxDir); err != nil {
 		log.Println("Build function failed")
 		return err
 	}
 
 	// Register function to configured docker registry
-	if err = a.d.RegisterFunction(a.conf.DockerCfg.DockerRegistry, userName, functionName); err != nil {
+	if err = a.d.RegisterFunction(a.conf.DockerCfg.DockerRegistry, userName, functionNameLower); err != nil {
 		log.Println("Register function failed")
 		return err
 	}
@@ -102,8 +103,9 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 	uuidStr := uuid.String()
 
 	nsName := SERVERLESS_NAMESPACE
-	jobName := functionName + "-" + strings.Replace(userName, "_", "-", -1) + "-" + uuidStr
-	image := a.conf.DockerCfg.DockerRegistry + "/" + userName + "/" + functionName
+	functionNameLower := strings.ToLower(functionName)
+	jobName := functionNameLower + "-" + strings.Replace(userName, "_", "-", -1) + "-" + uuidStr
+	image := a.conf.DockerCfg.DockerRegistry + "/" + userName + "/" + functionNameLower
 	labels := make(map[string]string)
 
 	if err := a.k.CreateFunctionJob(jobName, image, params, nsName, labels); err != nil {

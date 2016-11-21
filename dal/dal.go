@@ -286,21 +286,21 @@ func (dal *MySQL) PutFunction(userName, funcName, funcContent string, userId int
 
 }
 
-func (dal *MySQL) GetFunction(userName, funcName string) (string, error) {
+func (dal *MySQL) GetFunction(userName, funcName string) (string, string, error) {
 	log.Println("Retriving function", funcName, "for user", userName)
 	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	var content string
+	var content, funcNameInDB string
 	err := dal.QueryRow(fmt.Sprintf(
-		"SELECT content FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
-		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(&content)
+		"SELECT f.name, content FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
+		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(&funcNameInDB, &content)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return content, nil
+	return funcNameInDB, content, nil
 
 }
 
