@@ -116,6 +116,10 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 func (dal *MySQL) ListFunctionsOfUser(username string, userId int64) ([]*Function, error) {
 	log.Println("Listing functions for user", username)
 
+	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
+		return nil, err
+	}
+
 	uid := userId
 
 	if uid < 0 && username == "" {
@@ -127,10 +131,6 @@ func (dal *MySQL) ListFunctionsOfUser(username string, userId int64) ([]*Functio
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return nil, err
 	}
 
 	stmt, err := dal.Prepare(fmt.Sprintf(
@@ -217,6 +217,10 @@ func (dal *MySQL) PutFunction(userName, funcName, funcContent string, userId int
 	var fid int
 	uid := userId
 
+	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
+		return -1, -1, err
+	}
+
 	if uid < 0 && userName == "" {
 		return -1, -1, errors.New("Either userName or userId should be valid")
 	}
@@ -228,9 +232,6 @@ func (dal *MySQL) PutFunction(userName, funcName, funcContent string, userId int
 		}
 	}
 
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return -1, -1, err
-	}
 	// Check if the function exists
 	err := dal.QueryRow(fmt.Sprintf("SELECT f_id FROM %s WHERE name = ? AND u_id = ?", dal.FunctionsTable), funcName, uid).Scan(&fid)
 	// Not exist, insert a new one
