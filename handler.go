@@ -180,7 +180,7 @@ func CreateFunctionHandler(a *appContext, response http.ResponseWriter, request 
 			log.Println(err)
 			return StatusError{Code: http.StatusFound,
 				Err: errors.New(fmt.Sprintf(
-					"Function %s already exists for user %s. Note: function name is case insentive", funcNameInDB, userName)),
+					"Function %s already exists for user %s. Note: function name is case insensitive", funcNameInDB, userName)),
 				UserMsg:     MessageCreateFunctionFailed,
 				SendErrResp: true}
 
