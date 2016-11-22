@@ -28,7 +28,7 @@ type DalConfig struct {
 }
 
 func (c *DalConfig) getDataSourceName() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:3306)/?parseTime=true", c.Username, c.Password, c.DBHost)
+	return fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", c.Username, c.Password, c.DBHost, c.DBName)
 }
 
 type MySQL struct {
@@ -47,15 +47,8 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 		return nil, err
 	}
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", config.DBName))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = db.Exec("USE " + config.DBName)
-	if err != nil {
-		return nil, err
-	}
+	// This prevents broken pipe caused by idle connection
+	db.SetMaxIdleConns(0)
 
 	// Create the users table if not already existed
 	_, err = db.Exec(fmt.Sprintf(`
@@ -116,10 +109,6 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 func (dal *MySQL) ListFunctionsOfUser(username string, userId int64) ([]*Function, error) {
 	log.Println("Listing functions for user", username)
 
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return nil, err
-	}
-
 	uid := userId
 
 	if uid < 0 && username == "" {
@@ -178,10 +167,6 @@ func (dal *MySQL) ListFunctionsOfUser(username string, userId int64) ([]*Functio
 func (dal *MySQL) PutUserIfNotExisted(groupName, userName string) (int64, int64, error) {
 	log.Println("Adding user", userName, "to DB...")
 
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return -1, -1, err
-	}
-
 	stmt, err := dal.Prepare(fmt.Sprintf(
 		"INSERT IGNORE INTO %s (name) VALUES (?)",
 		dal.UsersTable))
@@ -216,10 +201,6 @@ func (dal *MySQL) PutFunction(userName, funcName, funcContent string, userId int
 	var res sql.Result
 	var fid int
 	uid := userId
-
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return -1, -1, err
-	}
 
 	if uid < 0 && userName == "" {
 		return -1, -1, errors.New("Either userName or userId should be valid")
@@ -288,9 +269,6 @@ func (dal *MySQL) PutFunction(userName, funcName, funcContent string, userId int
 
 func (dal *MySQL) GetFunction(userName, funcName string) (string, string, error) {
 	log.Println("Retriving function", funcName, "for user", userName)
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return "", "", err
-	}
 
 	var content, funcNameInDB string
 	err := dal.QueryRow(fmt.Sprintf(
@@ -308,9 +286,6 @@ func (dal *MySQL) DeleteFunction(userName, funcName string) error {
 	var uid int64
 
 	log.Println("Deleting function", funcName, "for user", userName)
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return err
-	}
 
 	err := dal.QueryRow(fmt.Sprintf("SELECT u_id FROM %s WHERE name = ?", dal.UsersTable), userName).Scan(&uid)
 	if err != nil {
@@ -335,10 +310,6 @@ func (dal *MySQL) DeleteFunction(userName, funcName string) error {
 // Be careful with this function, it drops your entire database.
 // Only used for test purpose.
 func (dal *MySQL) ClearDatabase() error {
-	if _, err := dal.Exec("USE " + dal.DBName); err != nil {
-		return err
-	}
-
 	if _, err := dal.Exec(fmt.Sprintf("DELETE FROM %s", dal.ExecutionsTable)); err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ func createFunction(a *appContext, userName, functionName, runtime, code string)
 		return errors.New("Function code is empty.")
 	}
 
-	newCode := formatCode(code, functionName)
+	newCode := formatCode(runtime, code, functionName)
 	log.Printf("Code uploaded:\n%s", newCode)
 	log.Printf("Start creating function \"%s\" with runtime \"%s\"", functionName, runtime)
 
@@ -243,22 +243,46 @@ func checkCredentials(a *appContext, name string, pass string) (bool, error) {
 	return true, nil
 }
 
+const python27Tmpl = `import json
+import os
+import sys 
+import traceback
+
+%s
+
+params = os.environ["SERVERLESS_PARAMS"]
+
+try:
+    p = json.loads(params)
+except ValueError as e:
+    print 'Parameters are not in valid json format:', e
+    sys.exit(1)
+except:
+    print e
+    sys.exit(1)
+
+try:
+    %s(p)
+except NameError as e:
+    print e
+    sys.exit(1)
+except:
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    tr = traceback.extract_tb(exc_traceback)
+    for item in tr[1:]:
+        print "line", str(item[1]-5), "in", item[2], "\n\t", item[3]
+    print traceback.format_exc().splitlines()[-1]
+    sys.exit(1)
+`
+
 // Add imports and the remaining code
-func formatCode(code, functionName string) string {
-	return fmt.Sprintf("import json\n"+
-		"import os\n"+
-		"import sys\n"+
-		"\n"+
-		"%s\n"+
-		"\n"+
-		"params = os.environ[\"SERVERLESS_PARAMS\"]\n"+
-		"\n"+
-		"try:\n"+
-		"\tp = json.loads(params)\n"+
-		"except ValueError as e:\n"+
-		"\tprint 'Parameters are not in valid json format:', e\n"+
-		"\tsys.exit(1)\n"+
-		"%s(p)", code, functionName)
+func formatCode(runtime, code, functionName string) string {
+	switch runtime {
+	case "python27":
+		return fmt.Sprintf(python27Tmpl, code, functionName)
+	default:
+		return fmt.Sprintf(python27Tmpl, code, functionName)
+	}
 }
 
 func openLogFile(dir string) (*os.File, error) {
