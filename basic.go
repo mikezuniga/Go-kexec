@@ -243,12 +243,12 @@ func checkCredentials(a *appContext, name string, pass string) (bool, error) {
 	return true, nil
 }
 
-const python27Tmpl = `import json
+const python27Tmpl = `%s
+
+import json
 import os
 import sys 
 import traceback
-
-%s
 
 params = os.environ["SERVERLESS_PARAMS"]
 
@@ -270,7 +270,7 @@ except:
     exc_type, exc_value, exc_traceback = sys.exc_info()
     tr = traceback.extract_tb(exc_traceback)
     for item in tr[1:]:
-        print "line", str(item[1]-5), "in", item[2], "\n\t", item[3]
+        print "line", str(item[1]), "in", item[2], "\n\t", item[3]
     print traceback.format_exc().splitlines()[-1]
     sys.exit(1)
 `
