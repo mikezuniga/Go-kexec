@@ -1,5 +1,7 @@
 package dal
 
+import "time"
+
 type DAL interface {
 	// List functions created by a user
 	ListFunctionsOfUser(username string, userId int64) ([]*Function, error)
@@ -22,14 +24,17 @@ type DAL interface {
 
 	// Get the content of a function
 	//
-	// Returns: (string) function content
+	// Returns: (Function) the function
 	//			(error) if there is one
-	GetFunction(userName, funcName string) (string, string, error)
+	GetFunction(userName, funcName string) (*Function, error)
 
 	// Delete the function from the DB
 	//
 	// Returns: (error) if there is one
 	DeleteFunction(userName, funcName string) error
+
+	// Put the function execution into the DB
+	PutExecution(functionID int64, params, status, uuid, log string, timestamp time.Time) (int64, int64, error)
 
 	// Clear content from all tables
 	// Returns: (error) if there is one

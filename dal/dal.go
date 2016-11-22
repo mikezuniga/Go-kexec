@@ -85,6 +85,8 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 	CREATE TABLE IF NOT EXISTS %s (
 		e_id INT NOT NULL AUTO_INCREMENT, 
 		f_id INT NOT NULL,
+		params TEXT,
+		status VARCHAR(255) NOT NULL,
 		uuid VARCHAR(255) NOT NULL,
 		log TEXT, 
 		created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
@@ -267,18 +269,19 @@ func (dal *MySQL) PutFunction(userName, funcName, funcContent string, userId int
 
 }
 
-func (dal *MySQL) GetFunction(userName, funcName string) (string, string, error) {
+func (dal *MySQL) GetFunction(userName, funcName string) (*Function, error) {
 	log.Println("Retriving function", funcName, "for user", userName)
 
-	var content, funcNameInDB string
+	var function Function
 	err := dal.QueryRow(fmt.Sprintf(
-		"SELECT f.name, content FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
-		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(&funcNameInDB, &content)
+		"SELECT f.f_id, f.u_id, f.name, content, updated FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
+		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(
+		&function.ID, &function.UserID, &function.Name, &function.Content, &function.Updated)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return funcNameInDB, content, nil
+	return &function, nil
 
 }
 
@@ -305,6 +308,34 @@ func (dal *MySQL) DeleteFunction(userName, funcName string) error {
 		return err
 	}
 	return nil
+}
+
+func (dal *MySQL) PutExecution(functionID int64, params, status, uuid, log string, timestamp time.Time) (int64, int64, error) {
+	stmt, err := dal.Prepare(fmt.Sprintf(
+		"INSERT INTO %s (f_id, params, status, uuid, log, created) VALUES (?, ?, ?, ?, ?, ?)",
+		dal.ExecutionsTable))
+
+	if err != nil {
+		return -1, -1, err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(functionID, params, status, uuid, log, timestamp)
+	if err != nil {
+		return -1, -1, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return -1, -1, err
+	}
+
+	rowCnt, err := res.RowsAffected()
+	if err != nil {
+		return -1, -1, err
+	}
+
+	return lastId, rowCnt, nil
 }
 
 // Be careful with this function, it drops your entire database.

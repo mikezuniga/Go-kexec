@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/ldap.v2"
@@ -118,7 +119,7 @@ func ViewFuncPageHandler(a *appContext, response http.ResponseWriter, request *h
 		vars := mux.Vars(request)
 		functionName := vars["function"]
 
-		_, content, err := a.dal.GetFunction(userName, functionName)
+		f, err := a.dal.GetFunction(userName, functionName)
 		if err != nil {
 			log.Println("Cannot get function", functionName)
 			return StatusError{Code: http.StatusInternalServerError,
@@ -128,7 +129,7 @@ func ViewFuncPageHandler(a *appContext, response http.ResponseWriter, request *h
 			EnableFuncName: false,
 			FuncName:       functionName,
 			FuncRuntime:    "python27",
-			FuncContent:    content})
+			FuncContent:    f.Content})
 	}
 	return nil
 }
@@ -176,11 +177,11 @@ func CreateFunctionHandler(a *appContext, response http.ResponseWriter, request 
 		code := request.FormValue("codeTextarea")
 
 		// Check if function already exists
-		if funcNameInDB, _, err := a.dal.GetFunction(userName, functionName); err != sql.ErrNoRows {
+		if f, err := a.dal.GetFunction(userName, functionName); err != sql.ErrNoRows {
 			log.Println(err)
 			return StatusError{Code: http.StatusFound,
 				Err: errors.New(fmt.Sprintf(
-					"Function %s already exists for user %s. Note: function name is case insentive", funcNameInDB, userName)),
+					"Function %s already exists for user %s. Note: function name is case insentive", f.Name, userName)),
 				UserMsg:     MessageCreateFunctionFailed,
 				SendErrResp: true}
 
@@ -236,12 +237,18 @@ func CallHandler(a *appContext, response http.ResponseWriter, request *http.Requ
 			log.Println("Calling function", functionName, "with parameters", params)
 		}
 
-		status, funcLog, err := callFunction(a, userName, functionName, params)
+		timestamp := time.Now()
+		callRes, err := callFunction(a, userName, functionName, params)
 		if err != nil {
 			return StatusError{Code: http.StatusFound, Err: err, UserMsg: MessageCallFunctionFailed}
 		}
 
-		FuncCalledTemplate.Execute(response, &CallResult{Result: status, Log: funcLog})
+		// Insert function execution into DB
+		if err := PutFunctionExecution(a, userName, functionName, params, callRes, timestamp); err != nil {
+			return StatusError{Code: http.StatusFound, Err: err, UserMsg: MessageCallFunctionFailed}
+		}
+
+		FuncCalledTemplate.Execute(response, callRes)
 	}
 	return nil
 }

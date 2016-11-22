@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -49,7 +50,7 @@ func callUserFunction(a *appContext, request *http.Request) ApiCallResult {
 	}
 
 	// Check if function already exists
-	_, _, err := a.dal.GetFunction(userName, functionName)
+	_, err := a.dal.GetFunction(userName, functionName)
 	if err == sql.ErrNoRows {
 		return ApiCallResult{ResError, "", fmt.Sprintf("Function %s not exist for user %s.", functionName, userName)}
 	} else if err != nil {
@@ -69,10 +70,16 @@ func callUserFunction(a *appContext, request *http.Request) ApiCallResult {
 	}
 
 	// Call function. This will create a job in OpenShift
-	status, funcLog, err := callFunction(a, userName, functionName, paramsStr)
+	timestamp := time.Now()
+	res, err := callFunction(a, userName, functionName, paramsStr)
 	if err != nil {
 		return ApiCallResult{ResError, "", err.Error()}
 	}
 
-	return ApiCallResult{status, funcLog, ""}
+	// Insert function execution into DB
+	if err := PutFunctionExecution(a, userName, functionName, paramsStr, res, timestamp); err != nil {
+		return ApiCallResult{ResError, "", err.Error()}
+	}
+
+	return ApiCallResult{res.Result, res.Log, ""}
 }

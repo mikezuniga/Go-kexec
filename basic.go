@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Symantec/Go-kexec/docker"
 	"github.com/wayn3h0/go-uuid"
@@ -87,7 +88,7 @@ func createFunction(a *appContext, userName, functionName, runtime, code string)
 }
 
 //return success/failed, log and error
-func callFunction(a *appContext, userName, functionName, params string) (string, string, error) {
+func callFunction(a *appContext, userName, functionName, params string) (*CallResult, error) {
 	var status, funcLog string
 
 	// create a uuid for each function call. This uuid can be
@@ -97,7 +98,7 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 
 	if err != nil {
 		log.Println("Failed to create uuid for function call.")
-		return "", "", err
+		return nil, err
 	}
 
 	uuidStr := uuid.String()
@@ -110,7 +111,7 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 
 	if err := a.k.CreateFunctionJob(jobName, image, params, nsName, labels); err != nil {
 		log.Println("Failed to call function", functionName)
-		return "", "", err
+		return nil, err
 	}
 	// Run the job
 	err = a.k.RunJob(jobName, nsName)
@@ -129,14 +130,14 @@ func callFunction(a *appContext, userName, functionName, params string) (string,
 delete:
 	err2 := a.k.DeleteFunctionJob(jobName, nsName)
 	if err2 != nil && err == nil {
-		return "", "", err2
+		return nil, err2
 	} else if err2 != nil && err != nil {
-		return "", "", errors.New(err.Error() + "\n" + err2.Error())
+		return nil, errors.New(err.Error() + "\n" + err2.Error())
 	} else if err2 == nil && err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return status, funcLog, nil
+	return &CallResult{status, uuidStr, funcLog}, nil
 }
 
 func setSession(a *appContext, userName string, response http.ResponseWriter) {
@@ -198,6 +199,18 @@ func getUserFunctions(a *appContext, username string, userId int64) ([]*Function
 func putUserFunction(a *appContext, username, funcName, funcContent string, userId int64) error {
 	_, _, err := a.dal.PutFunction(username, funcName, funcContent, -1)
 	return err
+}
+
+func PutFunctionExecution(a *appContext, userName, functionName, params string, callRes *CallResult, timestamp time.Time) error {
+	log.Println("Inserting executing of function", functionName, "of user", userName, "with parameters", params, "into DB...")
+	f, err := a.dal.GetFunction(userName, functionName)
+	if err != nil {
+		return err
+	}
+	if _, _, err := a.dal.PutExecution(f.ID, params, callRes.Result, callRes.Uuid, callRes.Log, timestamp); err != nil {
+		return err
+	}
+	return nil
 }
 
 func checkCredentials(a *appContext, name string, pass string) (bool, error) {
