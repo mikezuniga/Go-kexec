@@ -252,3 +252,23 @@ func CallHandler(a *appContext, response http.ResponseWriter, request *http.Requ
 	}
 	return nil
 }
+
+func ViewFuncLogsHandler(a *appContext, response http.ResponseWriter, request *http.Request) error {
+	userName := getUserName(a, request)
+	vars := mux.Vars(request)
+	functionName := vars["function"]
+	if userName == "" {
+		http.Redirect(response, request, "/", http.StatusFound)
+	} else {
+		if functionName == "" {
+			return StatusError{Code: http.StatusFound, Err: errors.New("Failed to get logs")}
+		}
+		execs, err := a.dal.ListExecution(userName, functionName)
+		if err != nil {
+			return StatusError{Code: http.StatusInternalServerError,
+				Err: err, UserMsg: MessageInternalServerError}
+		}
+		ViewLogsTemplate.Execute(response, &ViewLogsPage{FuncName: functionName, Executions: execs})
+	}
+	return nil
+}

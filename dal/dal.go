@@ -11,6 +11,7 @@ import (
 )
 
 var MAX_NUM_FUNC = 100
+var MAX_NUM_FUNC_EXEC = 20
 
 type DalConfig struct {
 	// data source
@@ -73,7 +74,7 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 		content TEXT, 
 		updated TIMESTAMP, 
 		PRIMARY KEY (f_id), 
-		FOREIGN KEY (u_id) REFERENCES %s(u_id)
+		FOREIGN KEY (u_id) REFERENCES %s(u_id) ON DELETE CASCADE
 	)`, config.FunctionsTable, config.UsersTable))
 
 	if err != nil {
@@ -91,7 +92,7 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 		log TEXT, 
 		created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
 		PRIMARY KEY (e_id), 
-		FOREIGN KEY (f_id) REFERENCES %s(f_id)
+		FOREIGN KEY (f_id) REFERENCES %s(f_id) ON DELETE CASCADE
 	)`, config.ExecutionsTable, config.FunctionsTable))
 
 	if err != nil {
@@ -336,6 +337,50 @@ func (dal *MySQL) PutExecution(functionID int64, params, status, uuid, log strin
 	}
 
 	return lastId, rowCnt, nil
+}
+
+func (dal *MySQL) ListExecution(userName, funcName string) ([]*FunctionExecution, error) {
+	log.Println("Listing executions for function", funcName, "of user", userName)
+
+	// Get function ID. Given username and function name, the function ID is unique
+	var funcID int64
+	err := dal.QueryRow(fmt.Sprintf(
+		"SELECT f.f_id FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
+		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(&funcID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get exections for a specific function ID
+	stmt, err := dal.Prepare(fmt.Sprintf(
+		"SELECT e_id, f_id, params, status, uuid, log, created FROM %s WHERE f_id = ? ORDER BY created DESC LIMIT %d",
+		dal.ExecutionsTable, MAX_NUM_FUNC_EXEC))
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(funcID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	execList := make([]*FunctionExecution, 0, MAX_NUM_FUNC_EXEC)
+	for rows.Next() {
+		e := FunctionExecution{ID: -1, FunctionID: -1}
+		err := rows.Scan(&e.ID, &e.FunctionID, &e.Params, &e.Status, &e.Uuid, &e.Log, &e.Timestamp)
+		if err != nil {
+			return execList, err
+		}
+
+		execList = append(execList, &e)
+	}
+	if err := rows.Err(); err != nil {
+		return execList, err
+	}
+
+	return execList, nil
 }
 
 // Be careful with this function, it drops your entire database.

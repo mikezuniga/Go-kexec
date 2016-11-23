@@ -36,6 +36,8 @@ type DAL interface {
 	// Put the function execution into the DB
 	PutExecution(functionID int64, params, status, uuid, log string, timestamp time.Time) (int64, int64, error)
 
+	ListExecution(userName, funcName string) ([]*FunctionExecution, error)
+
 	// Clear content from all tables
 	// Returns: (error) if there is one
 	ClearDatabase() error

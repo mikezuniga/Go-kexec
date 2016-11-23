@@ -124,3 +124,8 @@ type ConfigFuncPage struct {
 type ErrorPage struct {
 	Message string
 }
+
+type ViewLogsPage struct {
+	FuncName   string
+	Executions []*dal.FunctionExecution
+}
