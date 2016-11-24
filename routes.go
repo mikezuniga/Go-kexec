@@ -125,6 +125,12 @@ var routes = Routes{
 		CallHandler,
 	},
 	Route{
+		"Log",
+		"GET",
+		"/functions/{function}/logs",
+		ViewFuncLogsHandler,
+	},
+	Route{
 		"Call",
 		"POST",
 		"/users/{username}/functions/{function}/call",

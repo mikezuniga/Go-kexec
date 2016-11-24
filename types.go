@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/securecookie"
 )
 
+// Error type
+
 // Error represents a handler error. It provides methods for a HTTP status
 // code and embeds the built-in error interface.
 type Error interface {
@@ -45,6 +47,7 @@ func (se StatusError) SendErrorResponse() bool {
 	return se.SendErrResp
 }
 
+//App configuration
 type appConfig struct {
 	FileServerDir string
 	LogFileDir    string
@@ -88,6 +91,7 @@ type appHandler struct {
 	H appRouteHandler
 }
 
+//Page types
 type LoginPage struct {
 	LoginErr bool
 	ErrMsg   string
@@ -106,6 +110,7 @@ type DashboardPage struct {
 
 type CallResult struct {
 	Result string
+	Uuid   string
 	Log    string
 }
 
@@ -118,4 +123,9 @@ type ConfigFuncPage struct {
 
 type ErrorPage struct {
 	Message string
+}
+
+type ViewLogsPage struct {
+	FuncName   string
+	Executions []*dal.FunctionExecution
 }

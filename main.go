@@ -23,6 +23,7 @@ var (
 	FuncCalledTemplate *template.Template
 	ErrorTemplate      *template.Template
 	DeleteFuncTemplate *template.Template
+	ViewLogsTemplate   *template.Template
 )
 
 const (
@@ -104,6 +105,7 @@ func main() {
 	FuncCalledTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/func_called.html")))
 	ErrorTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/error.html")))
 	DeleteFuncTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/func_deleted.html")))
+	ViewLogsTemplate = template.Must(template.ParseFiles(filepath.Join(conf.FileServerDir, "html/view_logs.html")))
 
 	context := &appContext{d: d, k: k, dal: dal, cookieHandler: cookieHandler, conf: &conf}
 

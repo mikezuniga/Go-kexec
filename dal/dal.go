@@ -11,6 +11,7 @@ import (
 )
 
 var MAX_NUM_FUNC = 100
+var MAX_NUM_FUNC_EXEC = 20
 
 type DalConfig struct {
 	// data source
@@ -73,7 +74,7 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 		content TEXT, 
 		updated TIMESTAMP, 
 		PRIMARY KEY (f_id), 
-		FOREIGN KEY (u_id) REFERENCES %s(u_id)
+		FOREIGN KEY (u_id) REFERENCES %s(u_id) ON DELETE CASCADE
 	)`, config.FunctionsTable, config.UsersTable))
 
 	if err != nil {
@@ -85,11 +86,13 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 	CREATE TABLE IF NOT EXISTS %s (
 		e_id INT NOT NULL AUTO_INCREMENT, 
 		f_id INT NOT NULL,
+		params TEXT,
+		status VARCHAR(255) NOT NULL,
 		uuid VARCHAR(255) NOT NULL,
 		log TEXT, 
 		created TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
 		PRIMARY KEY (e_id), 
-		FOREIGN KEY (f_id) REFERENCES %s(f_id)
+		FOREIGN KEY (f_id) REFERENCES %s(f_id) ON DELETE CASCADE
 	)`, config.ExecutionsTable, config.FunctionsTable))
 
 	if err != nil {
@@ -267,18 +270,19 @@ func (dal *MySQL) PutFunction(userName, funcName, funcContent string, userId int
 
 }
 
-func (dal *MySQL) GetFunction(userName, funcName string) (string, string, error) {
+func (dal *MySQL) GetFunction(userName, funcName string) (*Function, error) {
 	log.Println("Retriving function", funcName, "for user", userName)
 
-	var content, funcNameInDB string
+	var function Function
 	err := dal.QueryRow(fmt.Sprintf(
-		"SELECT f.name, content FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
-		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(&funcNameInDB, &content)
+		"SELECT f.f_id, f.u_id, f.name, content, updated FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
+		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(
+		&function.ID, &function.UserID, &function.Name, &function.Content, &function.Updated)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return funcNameInDB, content, nil
+	return &function, nil
 
 }
 
@@ -305,6 +309,78 @@ func (dal *MySQL) DeleteFunction(userName, funcName string) error {
 		return err
 	}
 	return nil
+}
+
+func (dal *MySQL) PutExecution(functionID int64, params, status, uuid, log string, timestamp time.Time) (int64, int64, error) {
+	stmt, err := dal.Prepare(fmt.Sprintf(
+		"INSERT INTO %s (f_id, params, status, uuid, log, created) VALUES (?, ?, ?, ?, ?, ?)",
+		dal.ExecutionsTable))
+
+	if err != nil {
+		return -1, -1, err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(functionID, params, status, uuid, log, timestamp)
+	if err != nil {
+		return -1, -1, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return -1, -1, err
+	}
+
+	rowCnt, err := res.RowsAffected()
+	if err != nil {
+		return -1, -1, err
+	}
+
+	return lastId, rowCnt, nil
+}
+
+func (dal *MySQL) ListExecution(userName, funcName string) ([]*FunctionExecution, error) {
+	log.Println("Listing executions for function", funcName, "of user", userName)
+
+	// Get function ID. Given username and function name, the function ID is unique
+	var funcID int64
+	err := dal.QueryRow(fmt.Sprintf(
+		"SELECT f.f_id FROM %s f INNER JOIN %s u ON f.u_id=u.u_id WHERE f.name = ? AND u.name = ?",
+		dal.FunctionsTable, dal.UsersTable), funcName, userName).Scan(&funcID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get exections for a specific function ID
+	stmt, err := dal.Prepare(fmt.Sprintf(
+		"SELECT e_id, f_id, params, status, uuid, log, created FROM %s WHERE f_id = ? ORDER BY created DESC LIMIT %d",
+		dal.ExecutionsTable, MAX_NUM_FUNC_EXEC))
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(funcID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	execList := make([]*FunctionExecution, 0, MAX_NUM_FUNC_EXEC)
+	for rows.Next() {
+		e := FunctionExecution{ID: -1, FunctionID: -1}
+		err := rows.Scan(&e.ID, &e.FunctionID, &e.Params, &e.Status, &e.Uuid, &e.Log, &e.Timestamp)
+		if err != nil {
+			return execList, err
+		}
+
+		execList = append(execList, &e)
+	}
+	if err := rows.Err(); err != nil {
+		return execList, err
+	}
+
+	return execList, nil
 }
 
 // Be careful with this function, it drops your entire database.

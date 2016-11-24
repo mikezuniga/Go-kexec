@@ -26,6 +26,9 @@ type Function struct {
 type FunctionExecution struct {
 	ID         int64
 	FunctionID int64
+	Params     string
+	Status     string
+	Uuid       string
 	Log        string
 	Timestamp  time.Time
 }

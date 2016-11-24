@@ -58,6 +58,7 @@ func NewKexec(c *KexecConfig) (*Kexec, error) {
 //
 // Returns:		(error) if there is one
 func (k *Kexec) CreateFunctionJob(jobname, image, params, namespace string, labels map[string]string) error {
+	log.Println("Starting job", jobname)
 	template := createJobTemplate(image, jobname, params, namespace, labels)
 
 	_, err := k.Clientset.Batch().Jobs(namespace).Create(template)
@@ -214,7 +215,7 @@ func (k *Kexec) waitForPodComplete(jobName, namespace string) (v1.PodPhase, erro
 				}
 				resp := events.Object.(*v1.Pod)
 				podPhase = resp.Status.Phase
-				log.Println("Pod status:", podPhase)
+				log.Println(jobName, "pod status:", podPhase)
 				if podPhase != v1.PodPending &&
 					podPhase != v1.PodRunning {
 					w.Stop()
