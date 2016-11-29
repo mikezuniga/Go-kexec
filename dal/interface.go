@@ -34,8 +34,13 @@ type DAL interface {
 	DeleteFunction(userName, funcName string) error
 
 	// Put the function execution into the DB
+	//
+	// Returns: (int64) insert row id,
+	//          (int64) # of rows influenced,
+	//          (error) if there is one
 	PutExecution(functionID int64, params, status, uuid, log string, timestamp time.Time) (int64, int64, error)
 
+	// List function executions
 	ListExecution(userName, funcName string) ([]*FunctionExecution, error)
 
 	// Clear content from all tables

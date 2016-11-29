@@ -51,6 +51,11 @@ func NewMySQL(config *DalConfig) (*MySQL, error) {
 	// This prevents broken pipe caused by idle connection
 	db.SetMaxIdleConns(0)
 
+	// Verify DSN is setup properly
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
 	// Create the users table if not already existed
 	_, err = db.Exec(fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS %s ( 
